@@ -1,0 +1,6 @@
+*.pyc
+__pycache__
+*.sqlite
+third_party_data/
+.idea/
+checkpoints/

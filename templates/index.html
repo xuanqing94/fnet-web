@@ -1,0 +1,156 @@
+{% extends "frame.html" %}
+{% block body %}
+
+<div class="row">
+   <div class="col-12 jumbotron jumbotron-fluid">
+      <h1>Make your own AI reporter!</h1>
+      <img src="{{url_for('static', filename='illustration.png')}}" class="img-fluid">
+      <hr class="my-4">
+      <p>Try our fully automated model training and serving pipeline by
+        filling the form on the right.</p>
+      <p class="lead">
+        <a class="btn btn-primary btn-lg" href="https://xuanqing94.github.io/ai-reporter/" role="button">Learn more >>> </a>
+      </p>
+    </div>
+</div>
+
+<div class="row">
+  <div class="col-12 my-3 p-3 bg-white rounded shadow-lg">
+    <form action="start_training" method="POST" role="form" >
+    <div class="form-row">
+    <div class="col-5">
+        <fieldset class="border p-2">
+            <legend>Contact info:</legend>
+            <div class="form-group">
+              <label for="email-addr">Email address</label>
+              <input type="email" class="form-control" id="email-addr"
+                     name="email-addr"
+                     aria-describedby="emailHelp" placeholder="Enter email">
+              <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
+            </div>
+            <div class="form-group row">
+              <label for="first-name"
+                     class="col-sm-4 col-form-label">First name</label>
+              <div class="col-sm-8">
+                <input type="text" class="form-control"
+                       id="first-name" name="first-name"
+                       placeholder="Your first name">
+              </div>
+            </div>
+            <div class="form-group row">
+              <label for="last-name"
+                     class="col-sm-4 col-form-label">Last name</label>
+              <div class="col-sm-8">
+                <input type="text" class="form-control"
+                       id="last-name"
+                       name="last-name" placeholder="Your last name">
+              </div>
+            </div>
+          </fieldset>
+          <fieldset class="border p-2">
+                <legend>Project info:</legend>
+                <ul class="nav nav-tabs">
+                  <li class="nav-item">
+                    <a class="nav-link active" data-toggle="tab"
+                       href="#create">Create</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" data-toggle="tab"
+                       href="#retrieve">Retrieve
+                    </a>
+                  </li>
+                </ul>
+                <div id="myTabContent" class="tab-content">
+                  <div class="tab-pane fade active show" id="create">
+                    <div class="form-group row">
+                      <label for="proj-name"
+                             class="col-sm-5 col-form-label">Project name</label>
+                      <div class="col-sm-7">
+                        <input type="text" class="form-control"
+                               placeholder="Enter project name"
+                               id="proj-name" name="proj-name">
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label for="short-description">Description</label>
+                      <textarea class="form-control" id="short-description"
+                                name="short-description"
+                                rows="3" spellcheck="true"></textarea>
+                    </div>
+                    <div class="form-goup">
+                      <label for="gdrive-url">Google drive URL</label>
+                      <input class="form-control" type="url" name="gdrive-url"
+                             id="gdrive-url"
+                               placeholder="https://drive.google.com/file/d/<file-id>/view?usp=sharing"
+                               pattern="https:\/\/drive\.google\.com\/file\/d\/.*\/view\?usp=sharing"
+                               required>
+                    </div>
+                  </div>
+                  <div class="tab-pane fade" id="retrieve">
+                    <div class="form-group">
+                      <label for="passcode">Enter your passcode</label>
+                      <input type="text" class="form-control"
+                           id="passcode" name="passcode"
+                             placeholder="Check email for passcode">
+                    </div>
+                    <div class="form-goup">
+                      <label for="addl-gdrive-url">Additional test data
+                        (optional)</label>
+                      <input class="form-control" type="url"
+                             name="addl-gdrive-url"
+                             id="addl-gdrive-url"
+                               placeholder="https://drive.google.com/file/d/<file-id>/view?usp=sharing"
+                               pattern="https:\/\/drive\.google\.com\/file\/d\/.*\/view\?usp=sharing">
+                    </div>
+                  </div>
+                </div>
+              </fieldset>
+      </div>
+
+      <div class="col-7">
+        <fieldset class="border p-2">
+          <legend>Training control:</legend>
+          <div class="form-group">
+            <label for="epochs">Epochs (10~200):</label>
+            <input type="range" class="form-control-range" value="100" min="10" max="200" name="epochs" id="epochs" oninput="this.nextElementSibling.value = 'Epoch = ' + this.value">
+            <output>Epoch = 100</output>
+          </div>
+
+          <div class="form-group">
+            <label for="n-models">Ensemble size (1~10):</label>
+            <input type="range" class="form-control-range" value="1" min="1" max="10" name="n-models" id="n-models" oninput="this.nextElementSibling.value = '#models = ' + this.value">
+            <output>#models = 1</output>
+          </div>
+
+          <div class="form-group">
+            <label for="batch-size">Batch size (1~16):</label>
+            <input type="range" class="form-control-range" value="8" min="1" max="16" name="batch-size" id="batch-size" oninput="this.nextElementSibling.value = 'Batch size = ' + this.value">
+            <output>Batch size = 8</output>
+          </div>
+
+          <div class="form-group">
+            <label for="learning-rate">Learning rate (0.1~10e-3):</label>
+            <input type="range" class="form-control-range" value="1.0" min="0.1" max="10" step="0.1" name="learning-rate" id="learning-rate" oninput="this.nextElementSibling.value = 'Learning rate = ' + this.value + 'e-3'">
+            <output>Learning rate = 1.0e-3</output>
+          </div>
+
+          <div class="form-group">
+            <label for="weight-decay">Weight decay (0.1~50e-5):</label>
+            <input type="range" class="form-control-range" value="1.0" min="0.1" max="50" step="0.1" name="weight-decay" id="weight-decay" oninput="this.nextElementSibling.value = 'Weight decay = ' + this.value + 'e-5'">
+            <output>Weight decay = 1.0e-5</output>
+          </div>
+
+          <div class="form-group">
+            <label for="drop-rate">Dropout (0.0~0.9):</label>
+            <input type="range" class="form-control-range" value="0.5" min="0.0" max="0.9" step="0.1" name="drop-rate" id="drop-rate" oninput="this.nextElementSibling.value = 'Drop rate = ' + this.value">
+            <output>Drop rate = 0.5</output>
+          </div>
+
+        </fieldset>
+      </div>
+      </div>
+      <button type="submit" class="btn btn-primary float-right">Submit</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

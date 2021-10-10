@@ -1,0 +1,52 @@
+{% extends "frame.html" %}
+{% block body %}
+    <table class="table table-hover">
+        <caption>List of submitted jobs</caption>
+  <thead>
+    <tr>
+      <th scope="col">Job ID#</th>
+      <th scope="col">Timestamp</th>
+      <th scope="col">Name</th>
+      <th scope="col">Email</th>
+      <th scope="col">Proj name</th>
+      <th scope="col">Status</th>
+      <th scope="col">Download</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in job_list %}
+    <tr>
+      <th scope="row">{{ item.ID }}</th>
+      <td>{{ item.submit_time }}</td>
+      <td>{{ item.first_name }} {{ item.last_name }}</td>
+      <td>{{ item.email }}</td>
+      <td>{{ item.proj_name }}</td>
+
+      <td>
+      {% if item.status == "RUN" %}
+      <span class="badge badge-info">
+      {% elif item.status == "SUBMIT" %}
+      <span class="badge badge-dark">
+      {% elif item.status == "QUEUE" %}
+      <span class="badge badge-light">
+      {% elif item.status == "FAILURE" %}
+      <span class="badge badge-danger">
+      {% elif item.status == "SUCCESS" %}
+      <span class="badge badge-success">
+      {% endif %}
+        {{ item.status }}
+      </span>
+      </td>
+
+      <td>
+      {% if item.status != "Success" %}
+      <button type="button" class="btn btn-sm btn-primary" disabled>Check later</button>
+      {% else %}
+      <a href="{{ item.download_url }}" class="btn btn-primary btn-sm active" role="button" aria-pressed="true">Download</a>
+      {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

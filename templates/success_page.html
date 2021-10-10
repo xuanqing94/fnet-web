@@ -1,0 +1,11 @@
+{% extends "frame.html" %}
+{% block body %}
+    {% if valid_email and valid_uri %}
+        Good! You will receive a confirmation email shortly and a separate email containing downloadable results in a few hours.
+    {% elif valid_uri %}
+        Your email {{ result['email'] }} is not valid, return to the previous page for correction.
+    {% elif valid_email %}
+        Your google drive link is not valid, it should be something similar to https://drive.google.com/file/d/19DVuAinWXRZ_F0tDDsVlzTdjB-kJ4WDv/view?usp=sharing
+    {% endif %}
+
+{% endblock %}

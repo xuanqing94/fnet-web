@@ -1,0 +1,9 @@
+imageio
+opencv-python
+numpy
+tifffile
+imagecodecs
+flask
+googledrivedownloader
+py3-validate-email
+nvgpu

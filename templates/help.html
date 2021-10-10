@@ -1,0 +1,65 @@
+{% extends "frame.html" %}
+{% block body %}
+
+<h2>Tutorial</h2>
+    <h3>How to organize the folder structure?</h3>
+    The dataset to be uploaded to Google drive must have the following structure:
+    <p style="font-family:Lucida Console,monospace;white-space: pre;">
+    /root
+     |- /train
+     |   |- /$ROI1$
+     |   |   |- /Signal
+     |   |   |   |- $image1$.{tiff, png, jpg, etc.}  <--------+
+     |   |   |   |- ...                                       |
+     |   |   |   |- $imageN$.{tiff, png, jpg, etc.}  <~~~~~~~~~~~~~~~~~~+
+     |   |   |- /Target                                       |         }
+     |   |   |   |- $image1$.{tiff, png, jpg, etc.}  <--------+         }  The source/target file name must match!
+     |   |   |   |- ...                                                 }
+     |   |   |   |- $imageN$.{tiff, png, jpg, etc.}  <~~~~~~~~~~~~~~~~~~
+     |   |- /$ROI2$
+     |   |   ... ($ROI3$, $ROI4$, etc.)
+     |- /test
+     |   |- /$ROI1$
+     |   |   |- /Signal
+     |   |   |   |- $image1$.{tiff, png, jpg, etc.}
+     |   |   |   |- ...
+     |   |   |   |- $imageN$.{tiff, png, jpg, etc.}
+     |   |- /$ROI2$
+     |   |   ... ($ROI3$, $ROI4$, etc.)
+    </p>
+    Folder/file names in double dollars ($$) can be changed, other names are
+    strict. An example of a valid folder structure is as follows: <br>
+    <img src="{{url_for('static', filename='tree_structure.png')}}"
+         style="margin:10px;width:30%;height:auto;"/>
+    <h3>What is the size (in pixels) of the images?</h3>
+    <p>
+        Currently we only accepts the images of size 1024x1024 pixels. In future we may be more flexible to the size.
+        <a href="https://auth0.com/blog/image-processing-in-python-with-pillow/#:~:text=format%20this%20way.-,Resizing%20Images,Image%20with%20the%20new%20dimensions.">Here</a>
+        is a Python tutorial of resizing and cropping images.
+    </p>
+    <h3>What is the channel size of the images?</h3>
+    <p>
+        We expect the source (also called signal) images to have one channel (grey scale) or three channel (color). However, for the latter case we will convert the color image
+        to grey scale before training the model.<br>
+        Same rules also apply to target images.
+    </p>
+    <h3>What kind of image formats do you accept?</h3>
+    <p>
+        We accept a wide variety of formats, including *.tiff, *.png, *.jpg,
+        etc. A full list can be found <a
+            href="https://imageio.readthedocs.io/en/stable/formats.html#single-images">here</a>. However, note that the
+        prediction results will always be in *.png format.
+    </p>
+    <h3>Where to find my google drive link?</h3>
+    <p>
+        First, compress your root folder to a zip file (e.g. data.zip); then upload it to your personal google drive.
+        Make sure you opened the file sharing permission! This can be done by right click the file -> "Get shareable link". See images below:<br>
+        <img src="{{url_for('static', filename='right-click.png')}}" style="margin:10px;width:20%;height:auto;"/>
+        <img src="{{url_for('static', filename='share-link.png')}}" style="margin:10px;width:40%;height:auto;"/>
+    </p>
+    <h3>How long does it take to get my prediction results?</h3>
+    <p>
+        It depends on the size of your dataset, for example it takes 4-6 hours if the training set contains 300-500 images.
+    </p>
+
+{% endblock %}
