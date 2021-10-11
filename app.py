@@ -2,9 +2,11 @@ import glob
 import logging
 import multiprocessing
 import os
+import ast
 import shutil
 import sqlite3
 import datetime
+from pathlib import PurePath
 
 # Import smtplib for the actual sending function
 import smtplib
@@ -61,11 +63,12 @@ class JobItem:
             "SUBMIT",
             req["gdrive-url"],
             {
-                "epochs": req["epochs"],
-                "batch_size": req["batch-size"],
-                "learning_rate": req["learning-rate"],
-                "weight_decay": req["weight-decay"],
-                "drop_rate": req["drop-rate"],
+                "epochs": int(req["epochs"]),
+                "batch_size": int(req["batch-size"]),
+                "learning_rate": float(req["learning-rate"]),
+                "weight_decay": float(req["weight-decay"]),
+                "drop_rate": float(req["drop-rate"]),
+                "n_models": int(req["n-models"]),
             },
             req['short-description'],
         )
@@ -86,7 +89,7 @@ class SQL:
 
     def create_table(self):
         command = """CREATE TABLE job_list
-                       (ID text, timestamp text, first_name text, last_name text, email text, proj_name text, status text, download_url text, train_cfg text, description text)"""
+                       (ID text, timestamp text, first_name text, last_name text, email text, proj_name text, status text, download_url text, description text, train_cfg text)"""
         self.conn.execute(command)
         self.conn.commit()
 
@@ -95,7 +98,7 @@ class SQL:
         for row in self.conn.execute(
             """SELECT * FROM job_list ORDER BY timestamp DESC"""
         ):
-            job_list.append(JobItem(*row[:-1], eval(row[-1])))
+            job_list.append(JobItem(*row[:-1], ast.literal_eval(row[-1])))
         return job_list
 
     def insert_job(self, job_item: JobItem):
@@ -111,8 +114,8 @@ class SQL:
                 job_item.proj_name,
                 job_item.status,
                 job_item.download_url,
-                str(job_item.train_cfg),
                 job_item.description,
+                str(job_item.train_cfg),
             ),
         )
         self.conn.commit()
@@ -134,21 +137,18 @@ class SQL:
 
 
 SQL_FILE = "./job_list.sqlite"
-
-"""
-SQL_HANDLE = SQL(SQL_FILE)
-SQL_HANDLE.create_table()
-job_list = [
-        JobItem(str(uuid.uuid4()), "2019-01-01 09:00:00", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "SUBMIT", "TBD", {"batch_size": 4, "learning_rate": 1.0e-3}, ""),
-        JobItem(str(uuid.uuid4()), "2019-01-01 09:00:01", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "QUEUE", "TBD", {"batch_size": 4, "learning_rate": 1.0e-3}, ""),
-        JobItem(str(uuid.uuid4()), "2019-01-01 09:00:02", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "RUN", "TBD", {"batch_size": 4, "learning_rate": 1.0e-3}, ""),
-        JobItem(str(uuid.uuid4()), "2019-01-01 09:00:03", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "SUCCESS", "TBD", {"batch_size": 4, "learning_rate": 1.0e-3}, ""),
-        JobItem(str(uuid.uuid4()), "2019-01-01 09:00:04", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "FAILURE", "TBD", {"batch_size": 4, "learning_rate": 1.0e-3}, ""),
-]
-for job in job_list:
-    SQL_HANDLE.insert_job(job)
-exit(0)
-"""
+if not os.path.isfile(SQL_FILE):
+    SQL_HANDLE = SQL(SQL_FILE)
+    SQL_HANDLE.create_table()
+    job_list = [
+            JobItem(str(uuid.uuid4()), "2019-01-01 09:00:00", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "SUBMIT", "TBD", {"batch_size": 4, "learning_rate": 1.0e-3}, "DESC"),
+            JobItem(str(uuid.uuid4()), "2019-01-01 09:00:01", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "QUEUE", "TBD", {"batch_size": 4, "learning_rate": 1.0e-3}, "DESC"),
+            JobItem(str(uuid.uuid4()), "2019-01-01 09:00:02", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "RUN", "TBD", {"batch_size": 4, "learning_rate": 1.0e-3}, "DESC"),
+            JobItem(str(uuid.uuid4()), "2019-01-01 09:00:03", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "SUCCESS", "TBD",  {"batch_size": 4, "learning_rate": 1.0e-3}, "DESC"),
+            JobItem(str(uuid.uuid4()), "2019-01-01 09:00:04", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "FAILURE", "TBD", {"batch_size": 4, "learning_rate": 1.0e-3}, "DESC"),
+    ]
+    for job in job_list:
+        SQL_HANDLE.insert_job(job)
 
 app = Flask(__name__)
 logging.basicConfig(
@@ -176,142 +176,6 @@ def send_email(title, body, recipient):
         server.helo()
         server.send_message(msg)
 
-
-def convert_to_png(in_img):
-    """Convert the input image to png format. As png is known to work with pix2pix.
-    We could also modify their code to directly support other formats as well.
-
-    Input channels will be compressed to one channel. If input is color image, it will
-    be converted to black and white image.
-
-    Output image coexists with input image, only the file extension will be changed to
-    png. If the input is already in png format, then it will be overwritten.
-    :param in_img: Path to input image.
-    :return: Path to
-    """
-    if in_img.endswith(".tiff") or in_img.endswith(".tif"):
-        dat = tifffile.imread(in_img).astype(np.float)
-    else:
-        dat = imageio.imread(in_img).astype(np.float)
-    if len(dat.shape) != 2:
-        # guess the data spec
-        if dat.shape[-1] == 3:
-            # Convert rgb to grey
-            dat = 0.2989 * dat[:, :, 0] + 0.5870 * dat[:, :, 1] + 0.1140 * dat[:, :, 2]
-        elif dat.shape[-1] == 1:
-            dat = dat[:, :, 0]
-        else:
-            raise RuntimeError("Unknown data structure: ", dat.shape, dat)
-    assert dat.shape[0] == dat.shape[1] == 1024
-    dat = dat.astype(np.uint8)
-    # replace the file extension to png
-    out_img = ".".join(in_img.split(".")[:-1] + ["png"])
-    imageio.imwrite(out_img, dat)
-    return out_img
-
-
-def collect_images_and_copy(train_dir, test_dir, out_dir):
-    """Collect images from training and testing directories, and move them to
-    output directory for launching Pix2pix.
-    :param train_dir: str, the root directory of training files.
-    :param test_dir: str, the root directory of testing files.
-    :param out_dir: str, the output directory in which both training and test
-    files will be written.
-    :return: the number of training images and the number of testing images.
-    """
-
-    def collect_images(folder):
-        """Get all images under this folder with valid extension.
-        :param folder: Path to directory containing images.
-        :return: A list of path to images with sorted order.
-        """
-        images = []
-        for valid_ext in ["png", "jpg", "jpeg", "tif", "tiff"]:
-            images.extend(glob.glob(f"{folder}/*.{valid_ext}"))
-        return sorted(images)
-
-    def move_or_copy_overwrite(src_f, dst_folder, move=True):
-        """A helper function to move/copy image from one place to another. The
-        image file name will not change after moving/copying. It may also overwrite
-        the file in dst_folder having the same file name.
-        :param src_f: Path to source image.
-        :param dst_folder: Path to target folder.
-        :param move: Whether to move or copy the image.
-        :return: None
-        """
-        dst_file = os.path.join(dst_folder, os.path.basename(src_f))
-        if move:
-            shutil.move(src_f, dst_file)
-        else:
-            shutil.copy(src_f, dst_file)
-
-    train_signal_images = collect_images(f"{train_dir}/**/Signal/")
-    train_target_images = [f.replace("Signal", "Target") for f in train_signal_images]
-    train_A = os.path.join(out_dir, "A/train")
-    train_B = os.path.join(out_dir, "B/train")
-    os.makedirs(train_A, exist_ok=True)
-    os.makedirs(train_B, exist_ok=True)
-    for fa, fb in zip(train_signal_images, train_target_images):
-        # Temperary!!
-        # fb = fb.replace('WHITE', 'F1')
-        assert os.path.isfile(fb)
-        # convert image to png format
-        fa = convert_to_png(fa)
-        fb = convert_to_png(fb)
-        move_or_copy_overwrite(fa, train_A)
-        move_or_copy_overwrite(fb, train_B)
-
-    # prepare the test folder, this is optional.
-    test_signal_images = collect_images(f"{test_dir}/**/Signal/")
-    test_A = os.path.join(out_dir, "A/test")
-    test_B = os.path.join(out_dir, "B/test")
-    os.makedirs(test_A, exist_ok=True)
-    os.makedirs(test_B, exist_ok=True)
-    for fa in test_signal_images:
-        fa = convert_to_png(fa)
-        move_or_copy_overwrite(fa, test_A, move=False)
-        # a fake target image
-        move_or_copy_overwrite(fa, test_B)
-
-    # Gather some statistics
-    return len(train_signal_images), len(test_signal_images)
-
-
-def combine_A_and_B(out_dir):
-    bash_cmd = (
-        f"python ./scripts/combine_A_and_B.py --fold_A={out_dir}/A "
-        f"--fold_B={out_dir}/B --fold_AB={out_dir}/AB"
-    )
-    ret_code = subprocess.run(bash_cmd.split())
-    logging.info(f"Combine A and B script finished with return code ({ret_code})")
-    return ret_code
-
-
-"""
-def train_marker(out_dir, expr_name):
-    bash_cmd = (
-        f"python ./train.py --dataroot={out_dir}/AB "
-        f"--name {expr_name} "
-        f"--gpu_ids 0 --model=pix2pix --input_nc=1 "
-        f"--output_nc=1 --dataset_mode aligned --batch_size 2 "
-        f"--load_size=1024 --crop_size 1024"
-    )
-    ret_code = subprocess.run(bash_cmd.split())
-    logging.info(f"Training code finished with return code ({ret_code})")
-    return ret_code
-
-
-def test_marker(out_dir, results_dir, expr_name):
-    bash_cmd = (
-        f"python test.py --dataroot {out_dir}/AB "
-        f"--name {expr_name} --gpu_ids 0 --model pix2pix --input_nc 1 "
-        f"--output_nc 1 --dataset_mode aligned --load_size 1024 "
-        f"--crop_size 1024 --results_dir {results_dir}"
-    )
-    ret_code = subprocess.run(bash_cmd.split())
-    logging.info(f"Testing code finished with return code ({ret_code})")
-    return ret_code
-"""
 
 def confirmation_mail_body(job: JobItem, num_training_imgs, num_testing_imgs):
     """Compose the body of confirmation email.
@@ -353,14 +217,17 @@ def results_mail_body(result):
 
 
 def train_marker(src, tgt, train_cfg, ckpt_dir):
-    cmd = (
-        f"python -m BNNBench.trainer.ensemble_trainer --src-dir {src} --tgt-dir {tgt}"
-        f"--dropout {train_cfg['drop_rate']} --batch-size {train_cfg['batch_size']}"
-        f"--img-size 1024 --init-lr {train_cfg['learning_rate']} --total-epochs {train_cfg['epochs']}"
-        f"--weight-decay {train_cfg['weight_decay']} --ckpt-file {ckpt_dir}"
-    )
-    ret_code = subprocess.run(cmd.split())
-    logging.info(f"Training code finished with return code ({ret_code})")
+    ret_code = 0
+    for k_model in range(train_cfg['n_models']):
+        ckpt_f = os.path.join(ckpt_dir, f"model_{k_model}")
+        cmd = (
+            f"python -m BNNBench.trainer.ensemble_trainer --src-dir {src} --tgt-dir {tgt} "
+            f"--dropout --batch-size {train_cfg['batch_size']} --img-size 1024 "
+            f"--init-lr {train_cfg['learning_rate']} --total-epochs {train_cfg['epochs']} "
+            f"--weight-decay {train_cfg['weight_decay']} --ckpt-file {ckpt_f}"
+        )
+        ret_code = subprocess.run(cmd, shell=True)
+        logging.info(f"Training code finished with return code ({ret_code})")
     return ret_code
 
 
@@ -370,10 +237,26 @@ def test_marker(src, tgt, ckpt_dir, result_dir):
         f"--img-size 1024 --batch-size 16 --test-src-dir {src} --test-tgt-dir {tgt} "
         f"--result-dir {result_dir}"
     )
-    ret_code = subprocess.run(cmd.split())
+    ret_code = subprocess.run(cmd, shell=True)
     logging.info(f"Testing code finished with return code ({ret_code})")
     return ret_code
 
+
+def pack_result_and_upload(result_dir):
+    result_tar_ball = os.path.join("./results", PurePath(result_dir).stem + ".tar.gz")
+    pack_cmd = f"tar -czvf {result_tar_ball} {result_dir}/"
+    ret_code = subprocess.run(pack_cmd, shell=True)
+    logging.info(f"Created tar ball with return code {ret_code}")
+    if ret_code.returncode == 0:
+        # upload to backblaze b2, currently we are using Xuanqing's personal account.
+        # In the future we need to have a formal account
+        tar_f = os.path.basename(result_tar_ball)
+        upload_cmd = f"b2 upload-file MSC-project {result_tar_ball} fnet-web/{tar_f}"
+        with subprocess.Popen(upload_cmd, shell=True, stdout=subprocess.PIPE) as proc:
+            # read first line for download url
+            url = proc.stdout.readline().decode("utf8").lstrip("URL by file name: ")
+        logging.info(f"Uploaded tar ball with downloading url {url}")
+    return url
 
 def process_task(job: JobItem, file_id):
     # update state
@@ -412,18 +295,23 @@ def process_task(job: JobItem, file_id):
         )
         # train for this marker
         logging.info("Launching the training loop")
-        train_marker(train_src_dir, train_tgt_dir, job.train_cfg, job.ID)
-
+        ckpt_dir = os.path.join("./checkpoints", job.ID)
+        os.makedirs(ckpt_dir, exist_ok=True)
+        train_marker(train_src_dir, train_tgt_dir, job.train_cfg, ckpt_dir)
         # generate the prediction result
         logging.info("Generating the prediction result")
-        test_marker(out_dir, results_dir, expr_name)
+        result_dir = os.path.join("./results", job.ID)
+        os.makedirs(result_dir, exist_ok=True)
+        test_marker(test_src_dir, test_tgt_dir, ckpt_dir, result_dir)
+        # package the result and upload
+        result_url = pack_result_and_upload(result_dir)
         # Send email to client
-        # send_email("Your model and predictions are ready")
+        send_email("Your model and predictions are ready", f"Your model and predictions can be downloaded from {result_url}", job.email)
     except Exception as e:
         send_email("JOB FAILURE", str(e), job.email)
         SQL_HANDLE.update_job_status(job.ID, "FAILURE")
         raise e
-    SQL_HANDLE.update_job_status_with_url(job.ID, "SUCCESS", "")
+    SQL_HANDLE.update_job_status_with_url(job.ID, "SUCCESS", result_url)
 
 
 def get_and_verify_gdrive_url(url):
@@ -445,13 +333,13 @@ def start_training():
     job = JobItem.from_request(result)
     is_valid_uri, file_id = get_and_verify_gdrive_url(job.download_url)
     is_valid_email = validate_email(
-        email_address=job.email, check_regex=True, check_mx=False
+        email_address=job.email
     )
     if is_valid_email and is_valid_uri:
         # start a new process to download this file
         download_thread = multiprocessing.Process(
             target=process_task,
-            args=(job.ID, result, file_id, job.email),
+            args=(job, file_id),
             name=f"Download for {job.email}",
         )
         download_thread.start()

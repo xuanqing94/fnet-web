@@ -6,42 +6,38 @@
     The dataset to be uploaded to Google drive must have the following structure:
     <p style="font-family:Lucida Console,monospace;white-space: pre;">
     /root
-     |- /train
-     |   |- /$ROI1$
-     |   |   |- /Signal
-     |   |   |   |- $image1$.{tiff, png, jpg, etc.}  <--------+
-     |   |   |   |- ...                                       |
-     |   |   |   |- $imageN$.{tiff, png, jpg, etc.}  <~~~~~~~~~~~~~~~~~~+
-     |   |   |- /Target                                       |         }
-     |   |   |   |- $image1$.{tiff, png, jpg, etc.}  <--------+         }  The source/target file name must match!
-     |   |   |   |- ...                                                 }
-     |   |   |   |- $imageN$.{tiff, png, jpg, etc.}  <~~~~~~~~~~~~~~~~~~
-     |   |- /$ROI2$
-     |   |   ... ($ROI3$, $ROI4$, etc.)
-     |- /test
-     |   |- /$ROI1$
-     |   |   |- /Signal
-     |   |   |   |- $image1$.{tiff, png, jpg, etc.}
-     |   |   |   |- ...
-     |   |   |   |- $imageN$.{tiff, png, jpg, etc.}
-     |   |- /$ROI2$
-     |   |   ... ($ROI3$, $ROI4$, etc.)
+     |- /input
+     |   |- /train
+     |   |   | - $image1$.{tiff, png, jpg, etc.}  <--------+
+     |   |   | - $image2$.{tiff, png, jpg, etc.}           |
+     |   |   | - ...                                       |
+     |   |   | - $imageN$.{tiff, png, jpg, etc.}           |
+     |   |                                                 |
+     |   |- /test                                          |
+     |       | - $image1$.{tiff, png, jpg, etc.}           |=====> Same file name (no `WHITE`, `F1`, `F2`, etc.)
+     |       | - $image2$.{tiff, png, jpg, etc.}           |
+     |       | - ...                                       |
+     |       | - $imageN$.{tiff, png, jpg, etc.}           |
+     |                                                     |
+     |- /output                                            |
+         |- /train                                         |
+         |   |- $image1$.{tiff, png, jpg, etc.}   <--------+
+         |   |- ...
+         |   |- $imageN$.{tiff, png, jpg, etc.}
+         |
+         |- /test
+             | - $image1$.{tiff, png, jpg, etc.}
+             | - $image2$.{tiff, png, jpg, etc.}
+             | - ...
+             | - $imageN$.{tiff, png, jpg, etc.}
     </p>
-    Folder/file names in double dollars ($$) can be changed, other names are
-    strict. An example of a valid folder structure is as follows: <br>
-    <img src="{{url_for('static', filename='tree_structure.png')}}"
-         style="margin:10px;width:30%;height:auto;"/>
+Example dataset can be download from <a href="https://drive.google.com/file/d/1Kf3LYx8OcbKguKV6pWtHB_PCivMYhcBZ/view?usp=sharing">Google drive</a>.
+<br>
+There is a list of available datasets in <a href="http://xuanqing94.github.io/cell-db">cell-db</a>. However, that database is using slightly
+different naming convention. Basically, you need to change folder "A" to "input", and folder "B" to "output".
     <h3>What is the size (in pixels) of the images?</h3>
     <p>
-        Currently we only accepts the images of size 1024x1024 pixels. In future we may be more flexible to the size.
-        <a href="https://auth0.com/blog/image-processing-in-python-with-pillow/#:~:text=format%20this%20way.-,Resizing%20Images,Image%20with%20the%20new%20dimensions.">Here</a>
-        is a Python tutorial of resizing and cropping images.
-    </p>
-    <h3>What is the channel size of the images?</h3>
-    <p>
-        We expect the source (also called signal) images to have one channel (grey scale) or three channel (color). However, for the latter case we will convert the color image
-        to grey scale before training the model.<br>
-        Same rules also apply to target images.
+        Currently we only accept 3-channel RGB images of size 1024x1024 pixels. In the future, we may be more flexible.
     </p>
     <h3>What kind of image formats do you accept?</h3>
     <p>
@@ -50,10 +46,10 @@
             href="https://imageio.readthedocs.io/en/stable/formats.html#single-images">here</a>. However, note that the
         prediction results will always be in *.png format.
     </p>
-    <h3>Where to find my google drive link?</h3>
+    <h3>Where to find my google-drive link?</h3>
     <p>
-        First, compress your root folder to a zip file (e.g. data.zip); then upload it to your personal google drive.
-        Make sure you opened the file sharing permission! This can be done by right click the file -> "Get shareable link". See images below:<br>
+        First, compress your root folder to a zip file (e.g. data.zip); then upload it to your personal google-drive.
+        Make sure you opened the file sharing permission! This can be done by right-click the file -> "Get shareable link". See images below:<br>
         <img src="{{url_for('static', filename='right-click.png')}}" style="margin:10px;width:20%;height:auto;"/>
         <img src="{{url_for('static', filename='share-link.png')}}" style="margin:10px;width:40%;height:auto;"/>
     </p>
@@ -61,5 +57,21 @@
     <p>
         It depends on the size of your dataset, for example it takes 4-6 hours if the training set contains 300-500 images.
     </p>
-
+    <h3>How to choose the training hyper-parameters?</h3>
+    <p>
+        In most cases, the default settings are good enough. This default settings have been tested by tens of experiments I conducted before.
+        Most likely, it will also work in your dataset. One exception is the <strong>Ensemble size</strong>, you are always free to select more than one models.
+    </p>
+    <h3>Where can I get the download link?</h3>
+    <p>There are two places to download the results. First, once the training is completed, you will receive an email like this
+        <blockquote class="blockquote text-left">
+        Your model and predictions are ready
+        </blockquote>
+        <footer class="blockquote-footer">
+            Your model and predictions can be downloaded from https://f002.backblazeb2.com/file/MSC-project/fnet-web/xxxxx.tar.gz
+        </footer>
+The other way is to visit <a href="/show_jobs">Jobs tag</a>, find the correct experiment ID and name, if the state is <span class="badge badge-success">SUCCESS</span>, you will see a download button.
+    </p>
+    <h3>What if I have other issues not answered here?</h3>
+    <p>You can email <a href="mailto:xqliu@cs.ucla.edu">Xuanqing</a> for help.</p>
 {% endblock %}

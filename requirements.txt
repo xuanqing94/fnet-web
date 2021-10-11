@@ -7,3 +7,4 @@ flask
 googledrivedownloader
 py3-validate-email
 nvgpu
+b2

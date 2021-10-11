@@ -4,3 +4,4 @@ __pycache__
 third_party_data/
 .idea/
 checkpoints/
+results/

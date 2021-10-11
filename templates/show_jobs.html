@@ -5,7 +5,7 @@
   <thead>
     <tr>
       <th scope="col">Job ID#</th>
-      <th scope="col">Timestamp</th>
+      <th scope="col">Timestamp &darr;</th>
       <th scope="col">Name</th>
       <th scope="col">Email</th>
       <th scope="col">Proj name</th>
@@ -39,7 +39,7 @@
       </td>
 
       <td>
-      {% if item.status != "Success" %}
+      {% if item.status != "SUCCESS" %}
       <button type="button" class="btn btn-sm btn-primary" disabled>Check later</button>
       {% else %}
       <a href="{{ item.download_url }}" class="btn btn-primary btn-sm active" role="button" aria-pressed="true">Download</a>
