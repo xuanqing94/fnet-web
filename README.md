@@ -15,7 +15,7 @@ pip install -r requirements.txt
 
 ## Start server
 
-You can simple run with
+You can simply run with
 
 ```bash
 python app.py
