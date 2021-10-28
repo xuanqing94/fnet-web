@@ -65,8 +65,8 @@ class JobItem:
             {
                 "epochs": int(req["epochs"]),
                 "batch_size": int(req["batch-size"]),
-                "learning_rate": float(req["learning-rate"]),
-                "weight_decay": float(req["weight-decay"]),
+                "learning_rate": float(req["learning-rate"]) * 1.0e-3,
+                "weight_decay": float(req["weight-decay"]) * 1.0e-5,
                 "drop_rate": float(req["drop-rate"]),
                 "n_models": int(req["n-models"]),
             },
@@ -221,7 +221,7 @@ def train_marker(src, tgt, train_cfg, ckpt_dir):
     for k_model in range(train_cfg['n_models']):
         ckpt_f = os.path.join(ckpt_dir, f"model_{k_model}")
         cmd = (
-            f"python -m BNNBench.trainer.ensemble_trainer --src-dir {src} --tgt-dir {tgt} "
+            f"CUDA_VISIBLE_DEVICES=0 python -m BNNBench.trainer.ensemble_trainer --src-dir {src} --tgt-dir {tgt} "
             f"--dropout --batch-size {train_cfg['batch_size']} --img-size 1024 "
             f"--init-lr {train_cfg['learning_rate']} --total-epochs {train_cfg['epochs']} "
             f"--weight-decay {train_cfg['weight_decay']} --ckpt-file {ckpt_f}"
@@ -233,7 +233,7 @@ def train_marker(src, tgt, train_cfg, ckpt_dir):
 
 def test_marker(src, tgt, ckpt_dir, result_dir):
     cmd = (
-        f"python -m BNNBench.inference.ensemble_inference --ckpt-files {ckpt_dir}/* "
+        f"CUDA_VISIBLE_DEVICES=0 python -m BNNBench.inference.ensemble_inference --ckpt-files {ckpt_dir}/* "
         f"--img-size 1024 --batch-size 16 --test-src-dir {src} --test-tgt-dir {tgt} "
         f"--result-dir {result_dir}"
     )
@@ -332,9 +332,7 @@ def start_training():
     logging.info(f"{result}")
     job = JobItem.from_request(result)
     is_valid_uri, file_id = get_and_verify_gdrive_url(job.download_url)
-    is_valid_email = validate_email(
-        email_address=job.email
-    )
+    is_valid_email = validate_email(job.email)
     if is_valid_email and is_valid_uri:
         # start a new process to download this file
         download_thread = multiprocessing.Process(
