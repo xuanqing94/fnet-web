@@ -2,7 +2,7 @@
 
 ## Install dependencies
 
-First, you need to install the training backend. We currently use [BNNBench](https://github.io/xuanqing94/BNNBench), so we install it first with
+First, you need to install the training backend. We currently use [BNNBench](https://github.com/xuanqing94/BNNBench), so we install it first with
 
 ```bash
 pip install git+https://github.com/xuanqing94/BNNBench.git@v0.1#egg=BNNBench
