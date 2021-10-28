@@ -34,4 +34,4 @@ Then open browser and visit (https://localhost:8991)
 
 ## Serious deployment
 
-The section `Start server` above is only good for casual use. If this service is open to public in the future, we need to run on a production grade server. This [link](https://flask.palletsprojects.com/en/2.0.x/tutorial/deploy/#run-with-a-production-server) tells how.
+The section `Start server` above is only good for casual use. If this service is open to public in the future, we need to run on a production grade server. This [link](https://flask.palletsprojects.com/en/2.0.x/tutorial/deploy/#run-with-a-production-server) tells you how.
