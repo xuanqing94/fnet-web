@@ -13,6 +13,15 @@ Then, install other dependencies
 pip install -r requirements.txt
 ```
 
+## Prepare folders for data and checkpoints
+
+You need to manually create following folders to store datasets, model checkpoints and results. The program assumes all folders exist, otherwise it will exit with error.
+
+```bash
+# in fnet-web/ folder
+mkdir third_party_data checkpoints results
+```
+
 ## Start server
 
 You can simply run with
