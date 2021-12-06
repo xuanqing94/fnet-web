@@ -49,19 +49,7 @@
           </fieldset>
           <fieldset class="border p-2">
                 <legend>Project info:</legend>
-                <ul class="nav nav-tabs">
-                  <li class="nav-item">
-                    <a class="nav-link active" data-toggle="tab"
-                       href="#create">Create</a>
-                  </li>
-                  <li class="nav-item">
-                    <a class="nav-link" data-toggle="tab"
-                       href="#retrieve">Retrieve
-                    </a>
-                  </li>
-                </ul>
-                <div id="myTabContent" class="tab-content">
-                  <div class="tab-pane fade active show" id="create">
+
                     <div class="form-group row">
                       <label for="proj-name"
                              class="col-sm-5 col-form-label">Project name</label>
@@ -85,7 +73,6 @@
                                pattern="https:\/\/drive\.google\.com\/file\/d\/.*\/view\?usp=sharing"
                                required>
                     </div>
-                  </div>
                   <div class="tab-pane fade" id="retrieve">
                     <div class="form-group">
                       <label for="passcode">Enter your passcode</label>
@@ -93,16 +80,6 @@
                            id="passcode" name="passcode"
                              placeholder="Check email for passcode">
                     </div>
-                    <div class="form-goup">
-                      <label for="addl-gdrive-url">Additional test data
-                        (optional)</label>
-                      <input class="form-control" type="url"
-                             name="addl-gdrive-url"
-                             id="addl-gdrive-url"
-                               placeholder="https://drive.google.com/file/d/<file-id>/view?usp=sharing"
-                               pattern="https:\/\/drive\.google\.com\/file\/d\/.*\/view\?usp=sharing">
-                    </div>
-                  </div>
                 </div>
               </fieldset>
       </div>

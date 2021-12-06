@@ -3,6 +3,7 @@ import logging
 import multiprocessing
 import os
 import ast
+import json
 import shutil
 import sqlite3
 import datetime
@@ -25,6 +26,11 @@ from google_drive_downloader import GoogleDriveDownloader as gdd
 from validate_email import validate_email
 
 
+class MODE:
+    TEST = 0
+    TRAIN = 1
+
+
 class JobItem:
     def __init__(
         self,
@@ -36,8 +42,9 @@ class JobItem:
         proj_name,
         status,
         download_url,
-        train_cfg,
         description,
+        is_train,
+        train_cfg,
     ):
         self.ID = ID
         self.submit_time = submit_time
@@ -47,11 +54,13 @@ class JobItem:
         self.proj_name = proj_name
         self.status = status
         self.download_url = download_url
-        self.train_cfg = train_cfg
         self.description = description
+        self.is_train = is_train
+        self.train_cfg = train_cfg
+
 
     @staticmethod
-    def from_request(req):
+    def from_request(req, is_train=True):
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         return JobItem(
             str(uuid.uuid4()),
@@ -62,6 +71,8 @@ class JobItem:
             req["proj-name"],
             "SUBMIT",
             req["gdrive-url"],
+            req['short-description'],
+            MODE.TRAIN if is_train else MODE.TEST,
             {
                 "epochs": int(req["epochs"]),
                 "batch_size": int(req["batch-size"]),
@@ -70,7 +81,6 @@ class JobItem:
                 "drop_rate": float(req["drop-rate"]),
                 "n_models": int(req["n-models"]),
             },
-            req['short-description'],
         )
 
     def __str__(self):
@@ -89,20 +99,32 @@ class SQL:
 
     def create_table(self):
         command = """CREATE TABLE job_list
-                       (ID text, timestamp text, first_name text, last_name text, email text, proj_name text, status text, download_url text, description text, train_cfg text)"""
+                       (ID text, timestamp text, first_name text, last_name text, email text, proj_name text, status text, download_url text, description text, train_cfg text, is_train integer)"""
         self.conn.execute(command)
         self.conn.commit()
 
     def get_jobs(self):
         job_list = []
         for row in self.conn.execute(
-            """SELECT * FROM job_list ORDER BY timestamp DESC"""
+            """SELECT ID, timestamp, first_name, last_name, email, proj_name, status, download_url, description, is_train, train_cfg """
+            """FROM job_list ORDER BY timestamp DESC"""
         ):
             job_list.append(JobItem(*row[:-1], ast.literal_eval(row[-1])))
         return job_list
 
+    def get_job_by_id(self, id):
+        job_list = []
+        for row in self.conn.execute(
+            f"""SELECT ID, timestamp, first_name, last_name, email, proj_name, status, download_url, description, is_train, train_cfg FROM job_list WHERE ID='{id}'"""
+        ):
+            job_list.append(JobItem(*row[:-1], ast.literal_eval(row[-1])))
+        if len(job_list) == 0:
+            raise ValueError(f"Invalid job id: {id}")
+        return job_list[0]
+
     def insert_job(self, job_item: JobItem):
-        command = f"INSERT INTO job_list VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        command = f"INSERT INTO job_list (ID, timestamp, first_name, last_name, email, proj_name, status, download_url, description, is_train, train_cfg) " \
+                  f"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         self.conn.execute(
             command,
             (
@@ -115,6 +137,7 @@ class SQL:
                 job_item.status,
                 job_item.download_url,
                 job_item.description,
+                job_item.is_train,
                 str(job_item.train_cfg),
             ),
         )
@@ -141,11 +164,11 @@ if not os.path.isfile(SQL_FILE):
     SQL_HANDLE = SQL(SQL_FILE)
     SQL_HANDLE.create_table()
     job_list = [
-            JobItem(str(uuid.uuid4()), "2019-01-01 09:00:00", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "SUBMIT", "TBD", {"batch_size": 4, "learning_rate": 1.0e-3}, "DESC"),
-            JobItem(str(uuid.uuid4()), "2019-01-01 09:00:01", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "QUEUE", "TBD", {"batch_size": 4, "learning_rate": 1.0e-3}, "DESC"),
-            JobItem(str(uuid.uuid4()), "2019-01-01 09:00:02", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "RUN", "TBD", {"batch_size": 4, "learning_rate": 1.0e-3}, "DESC"),
-            JobItem(str(uuid.uuid4()), "2019-01-01 09:00:03", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "SUCCESS", "TBD",  {"batch_size": 4, "learning_rate": 1.0e-3}, "DESC"),
-            JobItem(str(uuid.uuid4()), "2019-01-01 09:00:04", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "FAILURE", "TBD", {"batch_size": 4, "learning_rate": 1.0e-3}, "DESC"),
+            JobItem(str(uuid.uuid4()), "2019-01-01 09:00:00", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "SUBMIT", "TBD", "DESC", {"batch_size": 4, "learning_rate": 1.0e-3}),
+            JobItem(str(uuid.uuid4()), "2019-01-01 09:00:01", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "QUEUE", "TBD", "DESC", {"batch_size": 4, "learning_rate": 1.0e-3}),
+            JobItem(str(uuid.uuid4()), "2019-01-01 09:00:02", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "RUN", "TBD", "DESC", {"batch_size": 4, "learning_rate": 1.0e-3}),
+            JobItem(str(uuid.uuid4()), "2019-01-01 09:00:03", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "SUCCESS", "TBD", "DESC",  {"batch_size": 4, "learning_rate": 1.0e-3}),
+            JobItem(str(uuid.uuid4()), "2019-01-01 09:00:04", "Xuanqing", "Liu", "xqliu@cs.ucla.edu", "Test job list", "FAILURE", "TBD", "DESC", {"batch_size": 4, "learning_rate": 1.0e-3}),
     ]
     for job in job_list:
         SQL_HANDLE.insert_job(job)
@@ -258,6 +281,7 @@ def pack_result_and_upload(result_dir):
         logging.info(f"Uploaded tar ball with downloading url {url}")
     return url
 
+
 def process_task(job: JobItem, file_id):
     # update state
     SQL_HANDLE = SQL(SQL_FILE)
@@ -314,6 +338,55 @@ def process_task(job: JobItem, file_id):
     SQL_HANDLE.update_job_status_with_url(job.ID, "SUCCESS", result_url)
 
 
+def process_inference_task(job: JobItem, file_id, ckpt_dir):
+    # update state
+    SQL_HANDLE = SQL(SQL_FILE)
+    SQL_HANDLE.update_job_status(job.ID, "RUN")
+    try:
+        logging.info(f"Downloading {file_id}")
+        unzip_dest = f"third_party_data/{file_id}"
+        zip_dest = unzip_dest + ".zip"
+        # unzip to file_id folder
+        if not os.path.isfile(zip_dest):
+            gdd.download_file_from_google_drive(
+                file_id=file_id,
+                dest_path=zip_dest,
+                unzip=False,
+                showsize=True,
+                overwrite=True,
+            )
+            with ZipFile(zip_dest, "r") as zipObj:
+                # Extract all the contents of zip file in current directory
+                zipObj.extractall(unzip_dest)
+        # extract the root folder name
+        unzip_dest = glob.glob(f"{unzip_dest}/*/")[0]
+        test_src_dir = os.path.join(unzip_dest, "input/test")
+        test_tgt_dir = os.path.join(unzip_dest, "output/test")
+        logging.info("Building training and testing folders")
+        num_training_imgs = 0
+        num_testing_imgs = len(os.listdir(test_src_dir))
+        send_email(
+            "Confirmation email from AI-reporter",
+            confirmation_mail_body(job, num_training_imgs, num_testing_imgs),
+            job.email,
+        )
+        # generate the prediction result
+        logging.info("Generating the prediction result")
+        result_dir = os.path.join("./results", job.ID)
+        os.makedirs(result_dir, exist_ok=True)
+        test_marker(test_src_dir, test_tgt_dir, ckpt_dir, result_dir)
+        # package the result and upload
+        result_url = pack_result_and_upload(result_dir)
+        # Send email to client
+        send_email("Your model and predictions are ready",
+                   f"Your model and predictions can be downloaded from {result_url}", job.email)
+    except Exception as e:
+        send_email("JOB FAILURE", str(e), job.email)
+        SQL_HANDLE.update_job_status(job.ID, "FAILURE")
+        raise e
+    SQL_HANDLE.update_job_status_with_url(job.ID, "SUCCESS", result_url)
+
+
 def get_and_verify_gdrive_url(url):
     parts = url.split("/")
     try:
@@ -326,6 +399,62 @@ def get_and_verify_gdrive_url(url):
     return is_valid_uri, file_id
 
 
+@app.route("/prediction", methods=["GET"])
+def render_prediction():
+    id = request.args.get("id", "")
+    if id == "":
+        return "Invalid request: needs to be /prediction?id=<UUID>"
+    # retrieve task with id
+    SQL_HANDLE = SQL(SQL_FILE)
+    item = SQL_HANDLE.get_job_by_id(id)
+    item.train_cfg = json.dumps(item.train_cfg, indent=4, sort_keys=True)
+    return render_template("retrieve.html", item=item)
+
+@app.route("/start_inference/<id>", methods=["POST"])
+def start_inference(id):
+    result = request.form
+    gdrive_url = result['gdrive-url']
+    SQL_HANDLE = SQL(SQL_FILE)
+    job = SQL_HANDLE.get_job_by_id(id)
+    # update item to the inference setting
+    old_id = job.ID
+    job.ID = str(uuid.uuid4())
+    job.submit_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    job.status = 'SUBMIT'
+    job.proj_name = job.proj_name + f"(Ref#{old_id[:6]})"
+    job.download_url = gdrive_url
+    job.is_train = False
+    # check if the checkpoint exist
+    ckpt_dir = os.path.join("./checkpoints", old_id)
+    if len(glob.glob(ckpt_dir + '/model_*')) == 0:
+        message = f"There is no model checkpoint under target directory: {ckpt_dir}"
+        return render_template(
+            "success_page.html",
+            message=message,
+        )
+    # start a new thread to download input data and start inference
+    is_valid_uri, file_id = get_and_verify_gdrive_url(job.download_url)
+    if not is_valid_uri:
+        message = f"Got an invalid input: {job.email}, {job.download_url}"
+        return render_template(
+            "success_page.html",
+            message=message,
+        )
+    download_thread = multiprocessing.Process(
+        target=process_inference_task,
+        args=(job, file_id, ckpt_dir),
+        name=f"Download for {job.email}",
+    )
+    download_thread.start()
+    # insert a new entry to database
+    SQL_HANDLE = SQL(SQL_FILE)
+    SQL_HANDLE.insert_job(job)
+    return render_template(
+        "success_page.html",
+        message="Good! You will receive a confirmation email and a separate email containing downloadable results shortly",
+    )
+
+
 @app.route("/start_training", methods=["POST"])
 def start_training():
     result = request.form
@@ -333,25 +462,31 @@ def start_training():
     job = JobItem.from_request(result)
     is_valid_uri, file_id = get_and_verify_gdrive_url(job.download_url)
     is_valid_email = validate_email(job.email)
-    if is_valid_email and is_valid_uri:
-        # start a new process to download this file
-        download_thread = multiprocessing.Process(
-            target=process_task,
-            args=(job, file_id),
-            name=f"Download for {job.email}",
+    if not is_valid_email:
+        return render_template(
+            "success_page.html",
+            message=f"Your email {result['email']} is not valid, return to the previous page for correction.",
         )
-        download_thread.start()
-    else:
-        logging.info(f"Got an invalid input: {job.email}, {job.download_url}")
-
+    if not is_valid_uri:
+        return render_template(
+            "success_page.html",
+            message="Your google drive link is not valid, it should be something similar to "
+                    "https://drive.google.com/file/d/19DVuAinWXRZ_F0tDDsVlzTdjB-kJ4WDv/view?usp=sharing",
+        )
+    # start a new process to download this file
+    download_thread = multiprocessing.Process(
+        target=process_task,
+        args=(job, file_id),
+        name=f"Download for {job.email}",
+    )
+    download_thread.start()
     # insert a new entry to database
     SQL_HANDLE = SQL(SQL_FILE)
     SQL_HANDLE.insert_job(job)
     return render_template(
         "success_page.html",
-        result=result,
-        valid_email=is_valid_email,
-        valid_uri=is_valid_uri,
+        message="Good! You will receive a confirmation email shortly and a separate email containing downloadable"
+                " results in a few hours.",
     )
 
 
@@ -368,7 +503,7 @@ def help():
 
 
 @app.route("/")
-def hello_world():
+def index():
     return render_template("index.html")
 
 

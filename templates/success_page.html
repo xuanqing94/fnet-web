@@ -1,5 +1,6 @@
 {% extends "frame.html" %}
 {% block body %}
+    {{ message }}
     {% if valid_email and valid_uri %}
         Good! You will receive a confirmation email shortly and a separate email containing downloadable results in a few hours.
     {% elif valid_uri %}

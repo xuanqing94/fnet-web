@@ -6,18 +6,26 @@
     <tr>
       <th scope="col">Job ID#</th>
       <th scope="col">Timestamp &darr;</th>
+      <th scope="col">TestOnly</th>
       <th scope="col">Name</th>
       <th scope="col">Email</th>
       <th scope="col">Proj name</th>
       <th scope="col">Status</th>
-      <th scope="col">Download</th>
+      <th scope="col">Actions</th>
     </tr>
   </thead>
   <tbody>
     {% for item in job_list %}
     <tr>
-      <th scope="row">{{ item.ID }}</th>
+      <th scope="row">{{ item.ID[:6] }}</th>
       <td>{{ item.submit_time }}</td>
+      <td>
+        {% if item.is_train %}
+        <i class="fas fa-times"></i>
+        {% else %}
+        <i class="fas fa-check"></i>
+        {% endif %}
+      </td>
       <td>{{ item.first_name }} {{ item.last_name }}</td>
       <td>{{ item.email }}</td>
       <td>{{ item.proj_name }}</td>
@@ -40,9 +48,13 @@
 
       <td>
       {% if item.status != "SUCCESS" %}
-      <button type="button" class="btn btn-sm btn-primary" disabled>Check later</button>
+      Check later
       {% else %}
-      <a href="{{ item.download_url }}" class="btn btn-primary btn-sm active" role="button" aria-pressed="true">Download</a>
+      <a href="{{ item.download_url }}" data-toggle="tooltip" data-placement="top" title="Download"><i class="fas fa-download fa-lg"></i></a>
+        {% if item.is_train %}
+      &nbsp|&nbsp<a href="/prediction?id={{ item.ID }}" data-toggle="tooltip" data-placement="top" title="Run prediction with this model"><i class="far fa-lightbulb fa-lg"></i></a>
+        {% endif %}
+      <!--<a href="{{ item.download_url }}" class="btn btn-primary btn-sm active" role="button" aria-pressed="true"><i class="far fa-lightbulb"></i></a>-->
       {% endif %}
       </td>
     </tr>

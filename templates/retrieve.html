@@ -1,31 +1,56 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Retrieve results</title>
-</head>
-<body>
+{% extends "frame.html" %}
+{% block body %}
+<div class="row">
+  <div class="col-12 my-3 p-3 bg-white rounded shadow-lg">
+    <form action="/start_inference/{{ item.ID }}" method="POST" role="form" >
+        <div class="form-row">
+            <div class="col-5">
+                <fieldset class="border p-2">
+                <legend>Contact info:</legend>
+                <div class="form-group">
+                  <label>Email address:</label> {{ item.email }}
+                </div>
+                <div class="form-group">
+                  <label>First name:</label> {{ item.first_name }}
+                </div>
+                <div class="form-group">
+                  <label>Last name:</label> {{ item.last_name }}
+                </div>
+                </fieldset>
 
-
-<div id="container" style="width:1500px;margin:auto">
-
-<div id="header" style="background-color:#FFA500;">
-<h1 style="margin-bottom:0;">Download results or upload more test data</h1></div>
-
-<div id="menu" style="background-color:#FFD700;width:200px;float:left;">
-<b>菜单</b><br>
-HTML<br>
-CSS<br>
-JavaScript
+                <fieldset class="border p-2">
+                <legend>Project info:</legend>
+                    <div class="form-group">
+                      <label>Project name:</label> {{ item.proj_name }} (Ref#{{ item.ID[:6] }})
+                    </div>
+                    <div class="form-group">
+                      <label>Description:</label> {{ item.description }}
+                    </div>
+                    <div class="form-goup">
+                      <label for="gdrive-url">Google drive URL</label>
+                      <input class="form-control" type="url" name="gdrive-url"
+                             id="gdrive-url"
+                               placeholder="https://drive.google.com/file/d/<file-id>/view?usp=sharing"
+                               pattern="https:\/\/drive\.google\.com\/file\/d\/.*\/view\?usp=sharing"
+                               required>
+                    </div>
+              </fieldset>
+            </div>
+            <div class="col-7">
+            <fieldset class="border p-2">
+              <legend>Training task ID:</legend>
+                <output>{{ item.ID }}</output>
+            </fieldset>
+            <fieldset class="border p-2">
+              <legend>Training configuration:</legend>
+                <pre>{{ item.train_cfg }}</pre>
+            </fieldset>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary float-right">Submit</button>
+    </form>
+  </div>
 </div>
 
-<div id="content" style="background-color:#EEEEEE;width:1300px;float:left;">
 
-
-</div>
-<div id="footer" style="background-color:#FFA500;clear:both;text-align:center;">
-Copyright © UCLA</div>
-</div>
-
-</body>
-</html>
+{% endblock %}
